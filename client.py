@@ -23,12 +23,18 @@ import select
 # Create a TCP/IP socket
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 socket_list = [sys.stdin, server]
-if (len(sys.argv) < 3):
+if (len(sys.argv) == 1 or len(sys.argv) > 3):
     print("Usage: client.py <hostname> <port>")
     sys.exit()
 
+port = None
+if (len(sys.argv) == 2):
+    port = 12132
+else:
+    port = int(sys.argv[2])
+
 # Connect the socket to the port where the server is listening
-server_address = (sys.argv[1], int(sys.argv[2]))
+server_address = (sys.argv[1], port)
 sys.stdout.write('Connecting to %s port %s... ' % server_address)
 try:
     server.connect(server_address)
@@ -54,8 +60,13 @@ while True:
                 print('\nConnection was closed by server.')
                 sys.exit()
             elif 'ASCII_ERROR' in data:
-                dataStrings = data.split('\n')
                 print("Message must contain ASCII characters only.")
+                dataStrings = data.split('\n')
+                sys.stdout.write(dataStrings[-1])
+                sys.stdout.flush()
+            elif 'EMPTY_ERROR' in data:
+                print('Empty string will be ignored.')
+                dataStrings = data.split('\n')
                 sys.stdout.write(dataStrings[-1])
                 sys.stdout.flush()
             else:
