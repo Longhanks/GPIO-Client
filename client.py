@@ -19,22 +19,23 @@
 import socket
 import sys
 import select
+import argparse
+
+parser = argparse.ArgumentParser(
+    description='A client for GPIO-Server.')
+parser.add_argument('hostname', type=str, help='The host to connect to.')
+parser.add_argument('-p', '--port', type=int, default=12132,
+                    help='The port to use. (default: 12132)')
+parser.add_argument('-m', '--message', type=str,
+                    help='Send this message and exit.')
+args = parser.parse_args()
 
 # Create a TCP/IP socket
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 socket_list = [sys.stdin, server]
-if (len(sys.argv) == 1 or len(sys.argv) > 3):
-    print("Usage: client.py <hostname> <port>")
-    sys.exit()
-
-port = None
-if (len(sys.argv) == 2):
-    port = 12132
-else:
-    port = int(sys.argv[2])
 
 # Connect the socket to the port where the server is listening
-server_address = (sys.argv[1], port)
+server_address = (args.hostname, args.port)
 sys.stdout.write('Connecting to %s port %s... ' % server_address)
 try:
     server.connect(server_address)
@@ -44,6 +45,13 @@ except:
 print('success!')
 
 data = server.recv(4096)
+
+if args.message:
+    server.sendall(args.message)
+    server.close()
+    print('Message successfully sent.')
+    sys.exit()
+
 sys.stdout.write(data)
 sys.stdout.flush()
 
@@ -73,5 +81,10 @@ while True:
                 sys.stdout.write(data)
                 sys.stdout.flush()
         else:
-            msg = sys.stdin.readline()
+            try:
+                msg = raw_input()
+            except EOFError:
+                server.close()
+                print("\nConnection closed.")
+                sys.exit()
             server.sendall(msg)
